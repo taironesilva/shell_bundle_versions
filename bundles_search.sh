@@ -66,12 +66,10 @@ formatar_data() {
 # ==============================
 if [ -z "$versao" ]; then
     # Sem versão: listar todas as versões encontradas
-    jq -c '.[]? // .' bundles.json 2>/dev/null | \
-    grep "$componente" | while read item; do
-        file=$(echo "$item" | jq -r '.file')
-        size=$(echo "$item" | jq -r '.size')
-        arrived=$(echo "$item" | jq -r '.arrivedAt')
-
+    jq -r --arg comp "$componente" '
+      .[]? | select(.file | test($comp)) |
+      [.file, .size, .arrivedAt] | @tsv
+    ' bundles.json | sort -t'-' -k2,2V | while IFS=$'\t' read file size arrived; do
         plataforma=$(echo "$file" | cut -d'/' -f1)
         nome=$(basename "$file" .zip)
         versao_extraida=$(echo "$nome" | rev | cut -d'-' -f1 | rev)
@@ -82,29 +80,21 @@ if [ -z "$versao" ]; then
         echo "Versão: $versao_extraida"
         echo "Data: $data_formatada"
         echo "-----------------------------------"
-    done | sort -t'-' -k2,2V
+    done
 else
-    # Com versão: buscar apenas a versão informada
-    if ! jq -r '.[]? // . | .file' bundles.json | grep -q "${componente}.*${versao}"; then
-        echo "Componente contendo '${componente}' na versão '${versao}' não foi encontrado no bundles.json."
-        exit 1
-    fi
+    # Com versão: buscar apenas a versão informada, estritamente
+    jq -r --arg comp "$componente" --arg ver "$versao" '
+      .[]? | select(.file | test($comp) and (.file | test(".*-" + $ver + "\\.zip$"))) |
+      [.file, .size, .arrivedAt] | @tsv
+    ' bundles.json | while IFS=$'\t' read file size arrived; do
+        plataforma=$(echo "$file" | cut -d'/' -f1)
+        nome=$(basename "$file" .zip)
+        data_formatada=$(formatar_data "$arrived")
 
-    jq -c '.[]? // .' bundles.json 2>/dev/null | while read item; do
-        file=$(echo "$item" | jq -r '.file')
-        size=$(echo "$item" | jq -r '.size')
-        arrived=$(echo "$item" | jq -r '.arrivedAt')
-
-        if [[ "$file" == *"${componente}"* && "$file" == *"${versao}"* ]]; then
-            plataforma=$(echo "$file" | cut -d'/' -f1)
-            nome=$(basename "$file" .zip)
-            data_formatada=$(formatar_data "$arrived")
-
-            echo "Plataforma: $plataforma"
-            echo "Componente: $nome"
-            echo "Versão: $versao"
-            echo "Data: $data_formatada"
-            echo "-----------------------------------"
-        fi
+        echo "Plataforma: $plataforma"
+        echo "Componente: $nome"
+        echo "Versão: $versao"
+        echo "Data: $data_formatada"
+        echo "-----------------------------------"
     done
 fi
