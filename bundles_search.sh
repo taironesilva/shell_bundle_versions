@@ -67,8 +67,7 @@ formatar_data() {
 if [ -z "$versao" ]; then
     # Sem versão: listar todas as versões encontradas
     jq -r --arg bundle "$bundle" '
-      (arrays | .[])? // (objects | .) |
-      select(.file | test($bundle)) |
+      .[] | select(.file | test($bundle)) |
       [.file, .size, .arrivedAt] | @tsv
     ' bundles.json | sort -t'-' -k2,2V | while IFS=$'\t' read file size arrived; do
         plataforma=$(echo "$file" | cut -d'/' -f1)
@@ -85,8 +84,7 @@ if [ -z "$versao" ]; then
 else
     # Com versão: buscar apenas a versão informada, estritamente
     jq -r --arg bundle "$bundle" --arg ver "$versao" '
-      (arrays | .[])? // (objects | .) |
-      select(.file | test($bundle) and (.file | test(".*-" + $ver + "\\.zip$"))) |
+      .[] | select(.file | test($bundle) and (.file | test(".*-" + $ver + "\\.zip$"))) |
       [.file, .size, .arrivedAt] | @tsv
     ' bundles.json | while IFS=$'\t' read file size arrived; do
         plataforma=$(echo "$file" | cut -d'/' -f1)
