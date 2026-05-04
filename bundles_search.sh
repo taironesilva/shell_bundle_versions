@@ -19,14 +19,14 @@ while true; do
 done
 
 # ==============================
-# 2 - Perguntar nome do bundle (pode ser parte do nome)
+# 2 - Perguntar nome do componente (pode ser parte do nome)
 # ==============================
-read -p "Informe parte do nome do bundle: " bundle
+read -p "Informe parte do nome do componente: " componente
 
 # ==============================
-# 3 - Perguntar versão do bundle (opcional)
+# 3 - Perguntar versão do componente (opcional)
 # ==============================
-read -p "Informe a versão do bundle (ou deixe em branco para listar todas): " versao
+read -p "Informe a versão do componente (ou deixe em branco para listar todas): " versao
 
 # ==============================
 # 4 - Remover bundles.json se existir
@@ -61,16 +61,19 @@ formatar_data() {
     date -j -f "%Y-%m-%dT%H:%M:%SZ" "$raw" +"%d/%m/%Y %H:%M:%S"
 }
 
+# ==============================
 # Definição de cores ANSI
+# ==============================
 AZUL="\033[1;34m"
 VERDE="\033[1;32m"
 RESET="\033[0m"
 
 # ==============================
-# 7 - Buscar bundles
+# 7 - Buscar componentes
 # ==============================
 if [ -z "$versao" ]; then
-    jq -r --arg comp "$bundle" '
+    # Sem versão: listar todas as versões encontradas
+    jq -r --arg comp "$componente" '
       .[]? | select(.file | test($comp)) |
       [.file, .size, .arrivedAt] | @tsv
     ' bundles.json | sort -t'-' -k2,2V | while IFS=$'\t' read file size arrived; do
@@ -80,14 +83,15 @@ if [ -z "$versao" ]; then
         data_formatada=$(formatar_data "$arrived")
 
         echo "Plataforma: $plataforma"
-        echo -e "Bundle: ${AZUL}${nome}${RESET}"
+        echo -e "Componente: ${AZUL}${nome}${RESET}"
         echo -e "Versão: ${VERDE}${versao_extraida}${RESET}"
         echo "Data: $data_formatada"
         echo "-----------------------------------"
     done
 else
-    jq -r --arg comp "$bundle" --arg ver "$versao" '
-      .[]? | select(.file | test($comp) and (.file | test(".*-" + $ver + "\\.zip$"))) |
+    # Com versão: buscar apenas a versão informada
+    jq -r --arg comp "$componente" --arg ver "$versao" '
+      .[]? | select(.file | test($comp) and test($ver)) |
       [.file, .size, .arrivedAt] | @tsv
     ' bundles.json | while IFS=$'\t' read file size arrived; do
         plataforma=$(echo "$file" | cut -d'/' -f1)
@@ -95,7 +99,7 @@ else
         data_formatada=$(formatar_data "$arrived")
 
         echo "Plataforma: $plataforma"
-        echo -e "Bundle: ${AZUL}${nome}${RESET}"
+        echo -e "Componente: ${AZUL}${nome}${RESET}"
         echo -e "Versão: ${VERDE}${versao}${RESET}"
         echo "Data: $data_formatada"
         echo "-----------------------------------"
