@@ -54,6 +54,14 @@ if [ $? -ne 0 ] || [ ! -s bundles.json ]; then
 fi
 
 # ==============================
+# Função para formatar data (macOS)
+# ==============================
+formatar_data() {
+    raw="$1"
+    date -j -f "%Y-%m-%dT%H:%M:%SZ" "$raw" +"%d/%m/%Y %H:%M:%S"
+}
+
+# ==============================
 # 7 - Buscar componentes
 # ==============================
 if [ -z "$versao" ]; then
@@ -66,13 +74,13 @@ if [ -z "$versao" ]; then
 
         plataforma=$(echo "$file" | cut -d'/' -f1)
         nome=$(basename "$file" .zip)
-        tamanho_kb=$((size / 1024))
-        data_formatada=$(date -d "$arrived" +"%d/%m/%Y %H:%M:%S")
+        versao_extraida=$(echo "$nome" | rev | cut -d'-' -f1 | rev)
+        data_formatada=$(formatar_data "$arrived")
 
         echo "Plataforma: $plataforma"
         echo "Componente: $nome"
-        echo "Tamanho: ${tamanho_kb} KB"
-        echo "Data de chegada: $data_formatada"
+        echo "Versão: $versao_extraida"
+        echo "Data: $data_formatada"
         echo "-----------------------------------"
     done | sort -t'-' -k2,2V
 else
@@ -90,14 +98,12 @@ else
         if [[ "$file" == *"${componente}"* && "$file" == *"${versao}"* ]]; then
             plataforma=$(echo "$file" | cut -d'/' -f1)
             nome=$(basename "$file" .zip)
-            tamanho_kb=$((size / 1024))
-            data_formatada=$(date -d "$arrived" +"%d/%m/%Y %H:%M:%S")
+            data_formatada=$(formatar_data "$arrived")
 
             echo "Plataforma: $plataforma"
             echo "Componente: $nome"
             echo "Versão: $versao"
-            echo "Tamanho: ${tamanho_kb} KB"
-            echo "Data de chegada: $data_formatada"
+            echo "Data: $data_formatada"
             echo "-----------------------------------"
         fi
     done
