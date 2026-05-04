@@ -19,14 +19,14 @@ while true; do
 done
 
 # ==============================
-# 2 - Perguntar nome do componente (pode ser parte do nome)
+# 2 - Perguntar nome do bundle (pode ser parte do nome)
 # ==============================
-read -p "Informe parte do nome do componente: " componente
+read -p "Informe parte do nome do bundle: " bundle
 
 # ==============================
-# 3 - Perguntar versão do componente (opcional)
+# 3 - Perguntar versão do bundle (opcional)
 # ==============================
-read -p "Informe a versão do componente (ou deixe em branco para listar todas): " versao
+read -p "Informe a versão do bundle (ou deixe em branco para listar todas): " versao
 
 # ==============================
 # 4 - Remover bundles.json se existir
@@ -62,12 +62,12 @@ formatar_data() {
 }
 
 # ==============================
-# 7 - Buscar componentes
+# 7 - Buscar bundles
 # ==============================
 if [ -z "$versao" ]; then
     # Sem versão: listar todas as versões encontradas
-    jq -r --arg comp "$componente" '
-      .[]? | select(.file | test($comp)) |
+    jq -r --arg bundle "$bundle" '
+      .[]? | select(.file | test($bundle)) |
       [.file, .size, .arrivedAt] | @tsv
     ' bundles.json | sort -t'-' -k2,2V | while IFS=$'\t' read file size arrived; do
         plataforma=$(echo "$file" | cut -d'/' -f1)
@@ -76,15 +76,15 @@ if [ -z "$versao" ]; then
         data_formatada=$(formatar_data "$arrived")
 
         echo "Plataforma: $plataforma"
-        echo "Componente: $nome"
+        echo "Bundle: $nome"
         echo "Versão: $versao_extraida"
         echo "Data: $data_formatada"
         echo "-----------------------------------"
     done
 else
     # Com versão: buscar apenas a versão informada, estritamente
-    jq -r --arg comp "$componente" --arg ver "$versao" '
-      .[]? | select(.file | test($comp) and (.file | test(".*-" + $ver + "\\.zip$"))) |
+    jq -r --arg bundle "$bundle" --arg ver "$versao" '
+      .[]? | select(.file | test($bundle) and (.file | test(".*-" + $ver + "\\.zip$"))) |
       [.file, .size, .arrivedAt] | @tsv
     ' bundles.json | while IFS=$'\t' read file size arrived; do
         plataforma=$(echo "$file" | cut -d'/' -f1)
@@ -92,7 +92,7 @@ else
         data_formatada=$(formatar_data "$arrived")
 
         echo "Plataforma: $plataforma"
-        echo "Componente: $nome"
+        echo "Bundle: $nome"
         echo "Versão: $versao"
         echo "Data: $data_formatada"
         echo "-----------------------------------"
