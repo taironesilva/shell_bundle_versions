@@ -97,4 +97,3 @@ else
         echo "Data: $data_formatada"
         echo "-----------------------------------"
     done
-fi
